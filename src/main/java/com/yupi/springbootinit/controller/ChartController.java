@@ -13,6 +13,7 @@ import com.yupi.springbootinit.constant.FileConstant;
 import com.yupi.springbootinit.constant.UserConstant;
 import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.exception.ThrowUtils;
+import com.yupi.springbootinit.manager.AIManager;
 import com.yupi.springbootinit.model.dto.chart.*;
 import com.yupi.springbootinit.model.dto.file.UploadFileRequest;
 import com.yupi.springbootinit.model.entity.Chart;
@@ -47,6 +48,9 @@ public class ChartController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private AIManager aiManager;
 
     // region 增删改查
 
@@ -270,8 +274,27 @@ public class ChartController {
 //        StringBuilder userInput = StringBuilder();
 //        userInput.append()
         // excel 转 csv (压缩后的数据)
-        String result = ExeclUtils.execlToCsv(multipartFile);
 
+        // 使用 AI
+        String chartType = "aaa";
+        long biModelId = 123L;
+
+        // 构造用户输入
+        StringBuilder userInput = new StringBuilder();
+        userInput.append("分析需求: ").append("\n");
+
+        String userGoal = goal;
+        if(StringUtils.isNotBlank(chartType)) {
+            userGoal = ", 请使用" + chartType;
+        }
+        userInput.append(goal).append("\n");
+        userInput.append("原始数据: ").append("\n");
+        // 压缩后的数据
+        String csvData = ExeclUtils.execlToCsv(multipartFile);
+        userInput.append(csvData).append("\n");
+
+        String result = aiManager.doChat(biModelId, userInput.toString());
+        String[] splits = result.split("[[[[]");
         return ResultUtils.success(result);
 
 //        // 读取到用户上传的 execl 文件，进行一个处理
