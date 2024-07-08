@@ -19,6 +19,7 @@ import com.yupi.springbootinit.model.dto.file.UploadFileRequest;
 import com.yupi.springbootinit.model.entity.Chart;
 import com.yupi.springbootinit.model.entity.User;
 import com.yupi.springbootinit.model.enums.FileUploadBizEnum;
+import com.yupi.springbootinit.model.vo.BiResponse;
 import com.yupi.springbootinit.service.ChartService;
 import com.yupi.springbootinit.service.UserService;
 import com.yupi.springbootinit.utils.ExeclUtils;
@@ -261,10 +262,14 @@ public class ChartController {
      * @return
      */
     @PostMapping("/gen")
-    public BaseResponse<String> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
-                                             GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) throws FileNotFoundException {
+    public BaseResponse<BiResponse> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
+                                                 GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) throws FileNotFoundException {
         String name = genChartByAiRequest.getName();
         String goal = genChartByAiRequest.getGoal();
+        String chartType = genChartByAiRequest.getChartType();
+
+        // 得到登录用户
+        User loginUser = userService.getLoginUser(request);
 
         // 校检
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR,"目标为空");
@@ -276,7 +281,6 @@ public class ChartController {
         // excel 转 csv (压缩后的数据)
 
         // 使用 AI
-        String chartType = "aaa";
         long biModelId = 123L;
 
         // 构造用户输入
@@ -293,9 +297,31 @@ public class ChartController {
         String csvData = ExeclUtils.execlToCsv(multipartFile);
         userInput.append(csvData).append("\n");
 
+        // excel 转 csv (压缩后的数据)
         String result = aiManager.doChat(biModelId, userInput.toString());
-        String[] splits = result.split("[[[[]");
-        return ResultUtils.success(result);
+        String[] splits = result.split("【 【 【 ");
+        if(splits.length < 3){
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"AI 生成错误");
+        }
+        String genChart = splits[1];
+        String genResult = splits[2];
+        // 插入到数据库
+        Chart chart = new Chart();
+        chart.setName(name);
+        chart.setGoal(goal);
+        chart.setChartData(csvData);
+        chart.setChartType(chartType);
+        chart.setGenChart(genChart);
+        chart.setGenResult(genResult);
+        chart.setUserId(loginUser.getId());
+        // 进行操作
+        boolean saveResult = chartService.save(chart);
+        ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR);
+
+        BiResponse biResponse = new BiResponse();
+        biResponse.setGenChart(genChart);
+        biResponse.setGenResult(genResult);
+        return ResultUtils.success(biResponse);
 
 //        // 读取到用户上传的 execl 文件，进行一个处理
 //        User loginUser = userService.getLoginUser(request);
