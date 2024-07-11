@@ -31,6 +31,8 @@ public class AIManager {
         }
 
         return response.getData().getContent();
+        // TODO 获得结果
+//        return "hello world aaa bbb";
     }
 
 

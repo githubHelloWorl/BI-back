@@ -117,7 +117,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- 鱼聪明 -->
+        <!-- 鱼聪明 AI -->
         <dependency>
             <groupId>com.yucongming</groupId>
             <artifactId>yucongming-java-sdk</artifactId>

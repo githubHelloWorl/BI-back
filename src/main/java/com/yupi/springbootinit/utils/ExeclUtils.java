@@ -6,10 +6,8 @@ import com.alibaba.excel.support.ExcelTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -38,7 +36,7 @@ public class ExeclUtils {
                     .sheet()
                     .headRowNumber(0)
                     .doReadSync();
-            System.out.println(list);
+//            System.out.println(list);
         }catch(IOException e){
             log.error("execl 表格处理错误", e);
         }
@@ -49,17 +47,20 @@ public class ExeclUtils {
         }
 
         // 转换为 csv
+        StringBuilder stringBuilder = new StringBuilder();
         // 读取表头
         LinkedHashMap<Integer, String> headerMap = (LinkedHashMap<Integer, String>) list.get(0);
         List<String> headerList = headerMap.values().stream().filter(ObjectUtils::isNotEmpty).collect(Collectors.toList());
-        System.out.println(StringUtils.join(headerList, ","));
+//        System.out.println(StringUtils.join(headerList, ","));
+        stringBuilder.append(StringUtils.join(headerList, ",")).append("\n");
         // 读取数据
         for(int i = 1; i < list.size(); ++i ){
             LinkedHashMap<Integer, String> dataMap = (LinkedHashMap<Integer, String>) list.get(i);
             List<String> dataList = dataMap.values().stream().filter(ObjectUtils::isNotEmpty).collect(Collectors.toList());
-            System.out.println(StringUtils.join(dataMap.values(), ","));
+//            System.out.println(StringUtils.join(dataMap.values(), ","));
+            stringBuilder.append(StringUtils.join(dataList, ",")).append("\n");
         }
-        System.out.println(list);
-        return "";
+//        System.out.println(list);
+        return stringBuilder.toString();
     }
 }

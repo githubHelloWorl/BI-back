@@ -34,10 +34,9 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.List;
 
 /**
- * 帖子接口
+ * 图表接口
  */
 @RestController
 @RequestMapping("/chart")
@@ -69,8 +68,6 @@ public class ChartController {
         }
         Chart chart = new Chart();
         BeanUtils.copyProperties(chartAddRequest, chart);
-
-//        chartService.validChart(chart, true);
         User loginUser = userService.getLoginUser(request);
         chart.setUserId(loginUser.getId());
 
@@ -119,8 +116,6 @@ public class ChartController {
         }
         Chart chart = new Chart();
         BeanUtils.copyProperties(chartUpdateRequest, chart);
-        // 参数校验
-//        chartService.validChart(chart, false);
         long id = chartUpdateRequest.getId();
         // 判断是否存在
         Chart oldChart = chartService.getById(id);
@@ -146,22 +141,6 @@ public class ChartController {
         }
         return ResultUtils.success(chart);
     }
-
-//    /**
-//     * 分页获取列表（仅管理员）
-//     *
-//     * @param chartQueryRequest
-//     * @return
-//     */
-//    @PostMapping("/list/page")
-//    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-//    public BaseResponse<Page<Chart>> listChartByPage(@RequestBody ChartQueryRequest chartQueryRequest) {
-//        long current = chartQueryRequest.getCurrent();
-//        long size = chartQueryRequest.getPageSize();
-//        Page<Chart> chartPage = chartService.page(new Page<>(current, size),
-//                chartService.getQueryWrapper(chartQueryRequest));
-//        return ResultUtils.success(chartPage);
-//    }
 
     /**
      * 分页获取列表（封装类）
@@ -205,25 +184,6 @@ public class ChartController {
                 chartService.getQueryWrapper(chartQueryRequest));
         return ResultUtils.success(chartPage);
     }
-
-    // endregion
-
-//    /**
-//     * 分页搜索（从 ES 查询，封装类）
-//     *
-//     * @param chartQueryRequest
-//     * @param request
-//     * @return
-//     */
-//    @PostMapping("/search/page/vo")
-//    public BaseResponse<Page<ChartVO>> searchChartVOByPage(@RequestBody ChartQueryRequest chartQueryRequest,
-//            HttpServletRequest request) {
-//        long size = chartQueryRequest.getPageSize();
-//        // 限制爬虫
-//        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-//        Page<Chart> chartPage = chartService.searchFromEs(chartQueryRequest);
-//        return ResultUtils.success(chartService.getChartVOPage(chartPage, request));
-//    }
 
     /**
      * 编辑（用户）
@@ -275,13 +235,8 @@ public class ChartController {
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR,"目标为空");
         ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR,"名称过长");
 
-        // 用户输入
-//        StringBuilder userInput = StringBuilder();
-//        userInput.append()
-        // excel 转 csv (压缩后的数据)
-
         // 使用 AI
-        long biModelId = 123L;
+        long biModelId = 1811022704970498049L;
 
         // 构造用户输入
         StringBuilder userInput = new StringBuilder();
@@ -289,7 +244,7 @@ public class ChartController {
 
         String userGoal = goal;
         if(StringUtils.isNotBlank(chartType)) {
-            userGoal = ", 请使用" + chartType;
+            userGoal += ", 请使用" + chartType;
         }
         userInput.append(goal).append("\n");
         userInput.append("原始数据: ").append("\n");
@@ -297,10 +252,14 @@ public class ChartController {
         String csvData = ExeclUtils.execlToCsv(multipartFile);
         userInput.append(csvData).append("\n");
 
+        System.out.println("要求输出内容:");
+        System.out.println(userInput);
+
         // excel 转 csv (压缩后的数据)
         String result = aiManager.doChat(biModelId, userInput.toString());
-        String[] splits = result.split("【 【 【 ");
-        if(splits.length < 3){
+        // TODO 进行截取
+        String[] splits = result.split(" ");
+        if(splits.length < 1){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"AI 生成错误");
         }
         String genChart = splits[1];
@@ -322,29 +281,6 @@ public class ChartController {
         biResponse.setGenChart(genChart);
         biResponse.setGenResult(genResult);
         return ResultUtils.success(biResponse);
-
-//        // 读取到用户上传的 execl 文件，进行一个处理
-//        User loginUser = userService.getLoginUser(request);
-//        // 文件目录：根据业务、用户来划分
-//        String uuid = RandomStringUtils.randomAlphanumeric(8);
-//        String filename = uuid + "-" + multipartFile.getOriginalFilename();
-//        File file = null;
-//        try {
-//
-//            // 返回可访问地址
-////            return ResultUtils.success(FileConstant.COS_HOST + filepath);
-//        } catch (Exception e) {
-////            log.error("file upload error, filepath = " + filepath, e);
-//            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
-//        } finally {
-//            if (file != null) {
-//                // 删除临时文件
-//                boolean delete = file.delete();
-//                if (!delete) {
-////                    log.error("file delete error, filepath = {}", filepath);
-//                }
-//            }
-//        }
     }
 
 
