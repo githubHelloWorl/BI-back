@@ -246,24 +246,27 @@ public class ChartController {
         if(StringUtils.isNotBlank(chartType)) {
             userGoal += ", 请使用" + chartType;
         }
-        userInput.append(goal).append("\n");
+        userInput.append(userGoal).append("\n");
         userInput.append("原始数据: ").append("\n");
         // 压缩后的数据
         String csvData = ExeclUtils.execlToCsv(multipartFile);
         userInput.append(csvData).append("\n");
 
-        System.out.println("要求输出内容:");
-        System.out.println(userInput);
+//        System.out.println("要求输出内容:");
+//        System.out.println(userInput);
 
         // excel 转 csv (压缩后的数据)
         String result = aiManager.doChat(biModelId, userInput.toString());
         // TODO 进行截取
-        String[] splits = result.split(" ");
+        String[] splits = result.split("【【【\n");
         if(splits.length < 1){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"AI 生成错误");
         }
-        String genChart = splits[1];
-        String genResult = splits[2];
+        String genChart = splits[1]; // 1
+        String genResult = splits[2]; // 2
+//        System.out.println("生成的内容,代码,结论");
+//        System.out.println(genChart);
+//        System.out.println(genResult);
         // 插入到数据库
         Chart chart = new Chart();
         chart.setName(name);
