@@ -2,6 +2,10 @@ package com.yupi.springbootinit.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.yupi.springbootinit.model.entity.Chart;
+import org.apache.ibatis.annotations.MapKey;
+
+import java.util.List;
+import java.util.Map;
 
 /**
 * @author yang99977
@@ -10,9 +14,8 @@ import com.yupi.springbootinit.model.entity.Chart;
 * @Entity generator.domain.Chart
 */
 public interface ChartMapper extends BaseMapper<Chart> {
-
+    @MapKey("querySql")
+    List<Map<String, Object>> queryChartData(String querySql);
 }
-
-
 
 

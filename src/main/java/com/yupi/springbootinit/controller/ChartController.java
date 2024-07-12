@@ -1,5 +1,6 @@
 package com.yupi.springbootinit.controller;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.poi.excel.ExcelUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -14,6 +15,7 @@ import com.yupi.springbootinit.constant.UserConstant;
 import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.exception.ThrowUtils;
 import com.yupi.springbootinit.manager.AIManager;
+import com.yupi.springbootinit.manager.RedisLimiterManager;
 import com.yupi.springbootinit.model.dto.chart.*;
 import com.yupi.springbootinit.model.dto.file.UploadFileRequest;
 import com.yupi.springbootinit.model.entity.Chart;
@@ -27,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +37,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 图表接口
@@ -51,6 +56,9 @@ public class ChartController {
 
     @Resource
     private AIManager aiManager;
+
+    @Autowired
+    private RedisLimiterManager redisLimiterManager;
 
     // region 增删改查
 
@@ -231,9 +239,23 @@ public class ChartController {
         // 得到登录用户
         User loginUser = userService.getLoginUser(request);
 
+        // 限流判断，每个用户一个限流器
+        redisLimiterManager.doRateLimit("genChartByAi_" + loginUser.getId());
+
         // 校检
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR,"目标为空");
         ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR,"名称过长");
+
+        // 校检文件
+        long size = multipartFile.getSize();
+        String originalFileName = multipartFile.getOriginalFilename();
+        final long ONE_MB = 1024*1024L;
+        ThrowUtils.throwIf(size > ONE_MB, ErrorCode.PARAMS_ERROR, "文件超过 1M");
+        // 校检文件后缀
+        String suffix = FileUtil.getSuffix(originalFileName);
+        final List<String> inValidFileSuffixList = Arrays.asList("png","jpg","svg","webp","jpeg");
+        ThrowUtils.throwIf(inValidFileSuffixList.contains(suffix), ErrorCode.PARAMS_ERROR, "文件后缀非法");
+
 
         // 使用 AI
         long biModelId = 1811022704970498049L;

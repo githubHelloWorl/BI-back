@@ -123,6 +123,13 @@
             <artifactId>yucongming-java-sdk</artifactId>
             <version>0.0.4</version>
         </dependency>
+
+        <!-- Redisson -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.32.0</version>
+        </dependency>
     </dependencies>
 
     <build>
