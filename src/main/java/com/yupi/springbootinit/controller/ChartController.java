@@ -281,7 +281,7 @@ public class ChartController {
         String result = aiManager.doChat(biModelId, userInput.toString());
         // TODO 进行截取
         String[] splits = result.split("【【【\n");
-        if(splits.length < 1){
+        if(splits.length < 3){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"AI 生成错误");
         }
         String genChart = splits[1]; // 1
