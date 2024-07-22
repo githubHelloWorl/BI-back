@@ -300,6 +300,7 @@ public class ChartController {
         chart.setGenChart(genChart);
         chart.setGenResult(genResult);
         chart.setUserId(loginUser.getId());
+        chart.setStatus("succeed"); // 为了添加 成功 状态(这里没有检测状态)
         // 进行操作
         boolean saveResult = chartService.save(chart);
         ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR);
