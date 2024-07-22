@@ -6,7 +6,6 @@ import org.redisson.api.RRateLimiter;
 import org.redisson.api.RateIntervalUnit;
 import org.redisson.api.RateType;
 import org.redisson.api.RedissonClient;
-import org.springframework.boot.autoconfigure.web.ConditionalOnEnabledResourceChain;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -34,8 +33,5 @@ public class RedisLimiterManager {
         if (!canOp) {
             throw new BusinessException(ErrorCode.TOO_MANY_REQUEST);
         }
-
     }
-
-
 }
