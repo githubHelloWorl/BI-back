@@ -424,7 +424,7 @@ public class ChartController {
 
 
     /**
-     * 智能分析(异步)
+     * 智能分析(消息队列 异步)
      *
      * @param multipartFile
      * @param genChartByAiRequest
@@ -459,28 +459,11 @@ public class ChartController {
         ThrowUtils.throwIf(inValidFileSuffixList.contains(suffix), ErrorCode.PARAMS_ERROR, "文件后缀非法");
 
 
-        // 使用 AI
-        long biModelId = 1811022704970498049L;
-
-        // 构造用户输入
-        StringBuilder userInput = new StringBuilder();
-        userInput.append("分析需求: ").append("\n");
-
-        String userGoal = goal;
-        if(StringUtils.isNotBlank(chartType)) {
-            userGoal += ", 请使用" + chartType;
-        }
-        userInput.append(userGoal).append("\n");
-        userInput.append("原始数据: ").append("\n");
-        // 压缩后的数据
-        String csvData = ExeclUtils.execlToCsv(multipartFile);
-        userInput.append(csvData).append("\n");
-
         // 插入到数据库
         Chart chart = new Chart();
         chart.setName(name);
         chart.setGoal(goal);
-        chart.setChartData(csvData);
+        chart.setChartData(null);
         chart.setChartType(chartType);
 //        chart.setGenChart(genChart);
 //        chart.setGenResult(genResult);
@@ -491,45 +474,13 @@ public class ChartController {
         boolean saveResult = chartService.save(chart);
         ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
 
+        long chartNewId = chart.getId();
+
         // TODO 建议处理任务对类满了后,抛异常的情况
-        CompletableFuture.runAsync(() -> {
-            // 先修改图表任务状态为 "执行中" 等执行成功后, 修改为 "已完成", 保存结果;
-            // 执行失败后, 状态修改为 "失败" 记录任务失败信息
-            Chart updateChart = new Chart();
-            updateChart.setId(chart.getId());
-            updateChart.setStatus("running");
-            boolean b = chartService.updateById(updateChart);
-            if(!b){
-                handleChartUpdateError(chart.getId(), "图表状态更新失败");
-                return;
-            }
-
-            // excel 转 csv (压缩后的数据)
-            String result = aiManager.doChat(biModelId, userInput.toString());
-            // TODO 进行截取
-            String[] splits = result.split("【【【\n");
-            if(splits.length < 1){
-                handleChartUpdateError(chart.getId(),"AI 生成错误");
-                return;
-            }
-            String genChart = splits[1].trim(); // 1
-            String genResult = splits[2].trim(); // 2
-
-            Chart updateChartResult = new Chart();
-            updateChartResult.setId(chart.getId());
-            updateChartResult.setStatus("succeed");
-            updateChartResult.setGenChart(genChart);
-            updateChartResult.setGenResult(genResult);
-            boolean updateResult = chartService.updateById(updateChartResult);
-            if (!updateResult) {
-//                throw new BusinessException(ErrorCode.OPERATION_ERROR, "图表状态更新失败");
-                handleChartUpdateError(chart.getId(), "更清新图表成功状态失败");
-                return;
-            }
-        }, threadPoolExecutor);
+        biMessageProducer.sendMessage(String.valueOf(chartNewId));
 
         BiResponse biResponse = new BiResponse();
-        biResponse.setChartId(chart.getId());
+        biResponse.setChartId(chartNewId);
 //        biResponse.setGenChart(genChart);
 //        biResponse.setGenResult(genResult);
         return ResultUtils.success(biResponse);
